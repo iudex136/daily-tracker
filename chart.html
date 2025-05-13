@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Habit Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+    }
+    .container {
+      display: flex;
+      max-width: 1000px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 4px 4px 12px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    canvas {
+      width: 600px !important;
+      height: 400px !important;
+    }
+    .summary {
+      padding: 20px;
+      background-color: #fafafa;
+      border-left: 1px solid #ddd;
+      width: 250px;
+    }
+    .summary h3 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <canvas id="habitChart"></canvas>
+    <div class="summary">
+      <h3>Total Counts</h3>
+      <ul id="summaryList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const data = JSON.parse(localStorage.getItem("dailyTrackerEntries")) || [];
+
+    const habits = ["read", "exercise", "stretch", "study", "avoidP", "avoidbh", "avoidbw", "avoidwt"];
+    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#2ecc71', '#e74c3c'];
+
+    const cumulativeCounts = habits.map(habit => {
+      let count = 0;
+      return data.map(entry => {
+        if (entry && entry[habit]) count++;
+        return count;
+      });
+    });
+
+    const labels = data.map((_, i) => `Day ${i + 1}`);
+    const datasets = habits.map((habit, i) => ({
+      label: habit,
+      data: cumulativeCounts[i],
+      fill: false,
+      borderColor: colors[i],
+      tension: 0.1
+    }));
+
+    const ctx = document.getElementById('habitChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          },
+        }
+      }
+    });
+
+    // Summary
+    const summaryList = document.getElementById("summaryList");
+    habits.forEach((habit, i) => {
+      const total = cumulativeCounts[i].slice(-1)[0] || 0;
+      const li = document.createElement("li");
+      li.textContent = `${habit}: ${total}`;
+      summaryList.appendChild(li);
+    });
+  </script>
+</body>
+</html>

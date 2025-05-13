@@ -81,11 +81,25 @@
         align-items: center;
       }
     }
+
+    .link-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
 
   <div id="cardsContainer"></div>
+
+  <div>
+    <a href="chart.html" class="link-button">View Chart</a>
+  </div>
 
   <script>
     const container = document.getElementById('cardsContainer');
@@ -176,13 +190,12 @@
     }
 
     window.onload = function () {
-     entries.forEach((entry, idx) => {
-  if (entry && typeof entry === 'object') {
-    const card = createCard(idx + 1, entry);
-    container.appendChild(card);
-  }
-});
-
+      entries.forEach((entry, idx) => {
+        if (entry && typeof entry === 'object') {
+          const card = createCard(idx + 1, entry);
+          container.appendChild(card);
+        }
+      });
 
       const plusCard = createPlusCard();
       container.appendChild(plusCard);
