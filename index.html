@@ -176,10 +176,13 @@
     }
 
     window.onload = function () {
-      entries.forEach((entry, idx) => {
-        const card = createCard(idx + 1, entry);
-        container.appendChild(card);
-      });
+     entries.forEach((entry, idx) => {
+  if (entry && typeof entry === 'object') {
+    const card = createCard(idx + 1, entry);
+    container.appendChild(card);
+  }
+});
+
 
       const plusCard = createPlusCard();
       container.appendChild(plusCard);
