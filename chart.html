@@ -2,74 +2,124 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Habit Chart</title>
+  <title>Tracker Charts</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      display: flex;
-      justify-content: center;
-      padding: 20px;
       font-family: Arial, sans-serif;
-      background: #f0f0f0;
+      padding: 20px;
+      background-color: #f0f0f0;
     }
+
     .container {
       display: flex;
-      max-width: 1000px;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 4px 4px 12px rgba(0,0,0,0.1);
-      overflow: hidden;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: space-between;
     }
-    canvas {
-      width: 600px !important;
-      height: 400px !important;
-    }
-    .summary {
+
+    .chart-box {
+      background-color: white;
       padding: 20px;
-      background-color: #fafafa;
-      border-left: 1px solid #ddd;
-      width: 250px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      flex: 1;
+      min-width: 300px;
+      max-width: 600px;
     }
-    .summary h3 {
+
+    .summary-box {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      flex: 1;
+      min-width: 200px;
+    }
+
+    h2 {
       margin-top: 0;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
     }
   </style>
 </head>
 <body>
+
+  <h1>Daily Tracker Charts</h1>
+
   <div class="container">
-    <canvas id="habitChart"></canvas>
-    <div class="summary">
-      <h3>Total Counts</h3>
+    <!-- Habit Tracker Chart -->
+    <div class="chart-box">
+      <h2>Habit Trends</h2>
+      <canvas id="habitChart"></canvas>
+    </div>
+
+    <!-- Summary Counts -->
+    <div class="summary-box">
+      <h2>Habit Totals</h2>
       <ul id="summaryList"></ul>
     </div>
   </div>
 
+  <div class="container">
+    <!-- Day Rating Chart -->
+    <div class="chart-box" style="flex: 1 1 100%;">
+      <h2>Day Ratings</h2>
+      <canvas id="ratingChart"></canvas>
+    </div>
+  </div>
+
   <script>
-    const data = JSON.parse(localStorage.getItem("dailyTrackerEntries")) || [];
+    const STORAGE_KEY = "dailyTrackerEntries";
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
-    const habits = ["read", "exercise", "stretch", "study", "avoidP", "avoidbh", "avoidbw", "avoidwt"];
-    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#2ecc71', '#e74c3c'];
+    const habitNames = ["read", "exercise", "stretch", "study", "avoidP", "avoidbh", "avoidbw", "avoidwt"];
+    const colors = [
+      "#007bff", "#28a745", "#ffc107", "#17a2b8",
+      "#dc3545", "#6f42c1", "#fd7e14", "#20c997"
+    ];
 
-    const cumulativeCounts = habits.map(habit => {
-      let count = 0;
-      return data.map(entry => {
-        if (entry && entry[habit]) count++;
-        return count;
+    const labels = data.map((_, idx) => `Day ${idx + 1}`);
+    const cumulativeData = {};
+    const totals = {};
+
+    habitNames.forEach(habit => {
+      cumulativeData[habit] = [];
+      totals[habit] = 0;
+    });
+
+    data.forEach((entry, idx) => {
+      habitNames.forEach(habit => {
+        if (entry && typeof entry === "object") {
+          totals[habit] += entry[habit] ? 1 : 0;
+          const prev = cumulativeData[habit][idx - 1] || 0;
+          cumulativeData[habit][idx] = prev + (entry[habit] ? 1 : 0);
+        } else {
+          const prev = cumulativeData[habit][idx - 1] || 0;
+          cumulativeData[habit][idx] = prev;
+        }
       });
     });
 
-    const labels = data.map((_, i) => `Day ${i + 1}`);
-    const datasets = habits.map((habit, i) => ({
+    const datasets = habitNames.map((habit, i) => ({
       label: habit,
-      data: cumulativeCounts[i],
-      fill: false,
+      data: cumulativeData[habit],
       borderColor: colors[i],
-      tension: 0.1
+      backgroundColor: colors[i],
+      fill: false,
+      tension: 0.2
     }));
 
-    const ctx = document.getElementById('habitChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'line',
+    const habitChartCtx = document.getElementById("habitChart").getContext("2d");
+    new Chart(habitChartCtx, {
+      type: "line",
       data: {
         labels,
         datasets
@@ -77,20 +127,63 @@
       options: {
         responsive: true,
         plugins: {
-          legend: {
-            position: 'bottom'
-          },
+          title: {
+            display: true,
+            text: "Cumulative Habit Progress"
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
         }
       }
     });
 
-    // Summary
     const summaryList = document.getElementById("summaryList");
-    habits.forEach((habit, i) => {
-      const total = cumulativeCounts[i].slice(-1)[0] || 0;
+    habitNames.forEach(habit => {
       const li = document.createElement("li");
-      li.textContent = `${habit}: ${total}`;
+      li.textContent = `${habit}: ${totals[habit]}`;
       summaryList.appendChild(li);
+    });
+
+    // Day Rating Chart
+    const ratingLabels = labels;
+    const ratingData = data.map(entry => parseFloat(entry?.dayRating || 0));
+
+    const ratingCtx = document.getElementById("ratingChart").getContext("2d");
+    new Chart(ratingCtx, {
+      type: "line",
+      data: {
+        labels: ratingLabels,
+        datasets: [{
+          label: "Day Rating",
+          data: ratingData,
+          borderColor: "#000",
+          backgroundColor: "#000",
+          tension: 0.2,
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: "Daily Self Rating"
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 10
+          }
+        }
+      }
     });
   </script>
 </body>
